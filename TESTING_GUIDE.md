@@ -15,22 +15,29 @@ Bây giờ hãy test các tính năng chính của hackathon:
 
 #### A) Tạo Subscription (Delegation)
 1. **Vào `/subscription`**
-2. **Điền thông tin**:
+2. **Kết nối MetaMask**:
+   - Click "Kết nối MetaMask" 
+   - Chọn tài khoản trong MetaMask
+   - Smart Account sẽ được tạo tự động
+3. **Điền thông tin**:
    - Delegate address: `0x1234567890123456789012345678901234567890` (test address)
    - Hạn mức: `10` USDC
    - Chu kỳ: `604800` (1 tuần)
-3. **Click "Tạo delegation"**
-4. **Kết quả mong đợi**: 
+4. **Click "Tạo delegation"**
+5. **Kết quả mong đợi**: 
    - Hiển thị delegation data (JSON)
    - Hoặc error message (nếu chưa config đầy đủ)
 
 #### B) Social Tip (Redeem)
 1. **Vào `/social-pay`**
-2. **Điền thông tin**:
+2. **Kết nối MetaMask** (nếu chưa kết nối):
+   - Click "Kết nối MetaMask"
+   - Chọn tài khoản
+3. **Điền thông tin**:
    - Gửi cho: `0x9876543210987654321098765432109876543210`
    - Số USDC: `2`
-3. **Click "Redeem (gasless)"**
-4. **Kết quả mong đợi**:
+4. **Click "Redeem (gasless)"**
+5. **Kết quả mong đợi**:
    - Hiển thị transaction hash
    - Hoặc error message
 

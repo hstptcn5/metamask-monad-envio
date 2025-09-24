@@ -9,7 +9,7 @@ const config: HardhatUserConfig = {
     monad: {
       url: process.env.MONAD_RPC_URL!,     // bạn đã xác nhận ở bước #1
       accounts: [process.env.DEPLOY_PK!],  // PK test để deploy token
-      chainId: Number(process.env.MONAD_CHAIN_ID || 20143),
+      chainId: Number(process.env.MONAD_CHAIN_ID || 10143),
     },
   },
   paths: {

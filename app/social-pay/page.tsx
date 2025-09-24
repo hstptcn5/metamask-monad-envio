@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { DEFAULT_USDC, redeemDelegation, toUsdc } from "@/lib/delegation";
+import MetaMaskConnect from "@/components/MetaMaskConnect";
 
 export default function SocialPayPage() {
   const [to, setTo] = useState<`0x${string}`>("0x0000000000000000000000000000000000000000");
@@ -35,6 +36,9 @@ export default function SocialPayPage() {
   return (
     <div>
       <h2>Social Tip</h2>
+      
+      <MetaMaskConnect />
+      
       <form onSubmit={onSubmit} style={{ display: "grid", gap: 12, maxWidth: 520 }}>
         <label>
           Gửi cho (address)

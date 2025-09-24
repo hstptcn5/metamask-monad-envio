@@ -6,6 +6,7 @@ import {
   createPaymasterClient,
 } from "viem/account-abstraction";
 import { createDelegation } from "@metamask/delegation-toolkit";
+import { debugSmartAccount, validateDelegationInput } from "./debug";
 
 export type PeriodScope = {
   type: "erc20PeriodTransfer";
@@ -21,19 +22,44 @@ export type CreateDelegationInput = {
 };
 
 export async function createDelegationWrapper(input: CreateDelegationInput) {
-  const sa = await getDevSmartAccount();
+  try {
+    console.log("Creating delegation with input:", input);
+    
+    // Validate input
+    const validationErrors = validateDelegationInput(input);
+    if (validationErrors.length > 0) {
+      throw new Error(`Input validation failed: ${validationErrors.join(", ")}`);
+    }
 
-  // Sử dụng createDelegation từ MetaMask Delegation Toolkit
-  const delegation = createDelegation({
-    from: sa.address,
-    to: input.delegate,
-    environment: sa.environment,
-    scope: input.scope,
-  });
+    const sa = await getDevSmartAccount();
+    debugSmartAccount(sa);
 
-  const signature = await sa.signDelegation({ delegation });
-  const signedDelegation = { ...delegation, signature };
-  return signedDelegation;
+    // Validate smart account
+    if (!sa.address || !sa.environment) {
+      throw new Error("Smart Account chưa được khởi tạo đúng cách");
+    }
+
+    console.log("Creating delegation object...");
+    // Sử dụng createDelegation từ MetaMask Delegation Toolkit
+    const delegation = createDelegation({
+      from: sa.address,
+      to: input.delegate,
+      environment: sa.environment,
+      scope: input.scope,
+    });
+
+    console.log("Delegation created:", delegation);
+    console.log("Signing delegation...");
+    
+    const signature = await sa.signDelegation({ delegation });
+    const signedDelegation = { ...delegation, signature };
+    
+    console.log("Delegation signed successfully");
+    return signedDelegation;
+  } catch (error: any) {
+    console.error("Error creating delegation:", error);
+    throw new Error(`Lỗi tạo delegation: ${error.message}`);
+  }
 }
 
 export type RedeemInput = {
@@ -86,6 +112,38 @@ export async function redeemDelegation(input: RedeemInput) {
   // const receipt = await bundler.waitForUserOperationReceipt({ hash: userOpHash });
 
   return { userOpHash };
+}
+
+// Function để tạo delegation với MetaMask smart account thực tế
+export async function createDelegationWithMetaMask(
+  smartAccount: any,
+  input: CreateDelegationInput
+) {
+  try {
+    // Validate inputs
+    if (!smartAccount || !smartAccount.address || !smartAccount.environment) {
+      throw new Error("MetaMask Smart Account chưa được khởi tạo");
+    }
+
+    if (!input.delegate || input.delegate.length !== 42) {
+      throw new Error("Delegate address không hợp lệ");
+    }
+
+    // Sử dụng createDelegation từ MetaMask Delegation Toolkit
+    const delegation = createDelegation({
+      from: smartAccount.address,
+      to: input.delegate,
+      environment: smartAccount.environment,
+      scope: input.scope,
+    });
+
+    const signature = await smartAccount.signDelegation({ delegation });
+    const signedDelegation = { ...delegation, signature };
+    return signedDelegation;
+  } catch (error: any) {
+    console.error("Error creating delegation with MetaMask:", error);
+    throw new Error(`Lỗi tạo delegation: ${error.message}`);
+  }
 }
 
 export const toUsdc = (n: number) => BigInt(Math.floor(n * 1_000_000));

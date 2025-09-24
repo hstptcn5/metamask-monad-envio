@@ -1,0 +1,35 @@
+type Transfer @entity {
+  id: ID!                    # txHash-logIndex
+  from: String!
+  to: String!
+  value: BigInt!
+  token: String!
+  timestamp: BigInt!
+}
+
+# Nếu có DelegationManager:
+type Redemption @entity {
+  id: ID!
+  delegator: String!
+  delegate: String!
+  token: String!
+  to: String!
+  amount: BigInt!
+  txHash: String!
+  timestamp: BigInt!
+}
+
+type Delegation @entity {
+  id: ID!                    # e.g., hash deleg + delegator
+  delegator: String!
+  delegate: String!
+  token: String!
+  periodAmount: BigInt!
+  periodDuration: BigInt!
+  startDate: BigInt!
+  totalRedeemed: BigInt!
+  remaining: BigInt!
+  lastRedeemedAt: BigInt
+  createdAt: BigInt!
+}
+

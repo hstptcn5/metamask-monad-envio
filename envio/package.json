@@ -1,0 +1,12 @@
+{
+  "name": "monad-envio-indexer",
+  "version": "1.0.0",
+  "description": "Envio indexer for Monad delegation and token transfers",
+  "scripts": {
+    "dev": "npx envio dev",
+    "deploy": "npx envio deploy"
+  },
+  "dependencies": {
+    "envio": "^0.1.0"
+  }
+}

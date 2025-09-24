@@ -5,9 +5,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <h1>Delegated Subscription & Social Pay Hub</h1>
         <nav style={{ display: "flex", gap: 12, marginBottom: 24 }}>
           <a href="/">Home</a>
+          <a href="/upgrade-eoa">Upgrade EOA</a>
           <a href="/subscription">Tạo Subscription</a>
           <a href="/social-pay">Social Tip</a>
           <a href="/dashboard">Dashboard</a>
+          <a href="/balance-checker">Balance Checker</a>
         </nav>
         {children}
       </body>

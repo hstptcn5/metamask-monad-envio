@@ -19,7 +19,16 @@ let _sa: SmartAccount | null = null;
 export async function getDevSmartAccount(): Promise<SmartAccount> {
   if (_sa) return _sa;
 
-  const pk = process.env.DEV_PRIVATE_KEY!;
+  // Kiểm tra nếu đang ở browser environment
+  if (typeof window !== "undefined" && window.ethereum) {
+    throw new Error("Sử dụng getMetaMaskSmartAccount() thay vì getDevSmartAccount() trong browser");
+  }
+
+  const pk = process.env.DEV_PRIVATE_KEY;
+  if (!pk) {
+    throw new Error("DEV_PRIVATE_KEY không được cấu hình trong environment variables");
+  }
+
   const signer = privateKeyToAccount(pk);
 
   // Tạo MetaMask Smart Account theo hướng dẫn chính thức
@@ -47,4 +56,54 @@ export async function getDevSmartAccount(): Promise<SmartAccount> {
     environment: saImpl.environment,
   };
   return _sa;
+}
+
+// Function để tạo Smart Account từ MetaMask (cho browser)
+export async function getMetaMaskSmartAccount(): Promise<SmartAccount> {
+  if (typeof window === "undefined" || !window.ethereum) {
+    throw new Error("MetaMask không được cài đặt");
+  }
+
+  const accounts = await window.ethereum.request({
+    method: "eth_requestAccounts",
+  });
+
+  if (accounts.length === 0) {
+    throw new Error("Không có tài khoản nào được kết nối");
+  }
+
+  const userAccount = accounts[0];
+
+  // Tạo wallet client
+  const { createWalletClient, custom } = await import("viem");
+  const walletClient = createWalletClient({
+    account: userAccount as `0x${string}`,
+    transport: custom(window.ethereum),
+    chain: monadTestnet,
+  });
+
+  // Tạo MetaMask Smart Account
+  const saImpl = await toMetaMaskSmartAccount({
+    client: publicClient,
+    implementation: Implementation.Hybrid,
+    deployParams: [userAccount, [], [], []],
+    deploySalt: "0x",
+    signer: { walletClient },
+  });
+
+  return {
+    address: saImpl.address as `0x${string}`,
+    signDelegation: async (payload: any) => {
+      return saImpl.signDelegation(payload);
+    },
+    encodeRedeemCalldata: (args) => {
+      // Sử dụng DelegationManager encoder từ environment
+      return saImpl.environment.contracts.DelegationManager.encode.redeemDelegations({
+        delegations: args.delegations,
+        modes: args.modes,
+        executions: args.executions,
+      });
+    },
+    environment: saImpl.environment,
+  };
 }

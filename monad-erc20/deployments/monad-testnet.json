@@ -1,0 +1,12 @@
+{
+  "network": "monad-testnet",
+  "chainId": 10143,
+  "contracts": {
+    "DelegationManager": {
+      "address": "0x8f7F24212E8C929614290b962d8B7EDCD4C06930",
+      "deployedAt": "2025-09-25T01:48:26.330Z",
+      "deployer": "0xd8FF12Afb233f53666a22373e864c3e23DcF7495",
+      "transactionHash": "0x2a42033244f1b0905861c3c85e01905d3659c6c92de71f6edced73dd178a10df"
+    }
+  }
+}

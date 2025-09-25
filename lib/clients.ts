@@ -17,6 +17,6 @@ export const publicClient = createPublicClient({
 });
 
 // Bundler và Paymaster URLs (có thể để trống cho demo)
-export const bundlerRpcUrl = process.env.BUNDLER_RPC_URL || "";
-export const paymasterRpcUrl = process.env.PAYMASTER_RPC_URL || "";
+export const bundlerRpcUrl = process.env.NEXT_PUBLIC_BUNDLER_RPC_URL || process.env.BUNDLER_RPC_URL || "";
+export const paymasterRpcUrl = process.env.NEXT_PUBLIC_PAYMASTER_RPC_URL || process.env.PAYMASTER_RPC_URL || "";
 

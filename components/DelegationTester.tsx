@@ -33,12 +33,22 @@ export default function DelegationTester() {
       // Test delegation thực tế từ localStorage
       const existingDelegations = JSON.parse(localStorage.getItem('delegations') || '[]');
       
+      console.log('Existing delegations:', existingDelegations);
+      console.log('Looking for:', { delegatorAddress, delegateAddress });
+      
       // Tìm delegation phù hợp
-      const delegation = existingDelegations.find((d: any) => 
-        d.from.toLowerCase() === delegatorAddress.toLowerCase() &&
-        d.to.toLowerCase() === delegateAddress.toLowerCase() &&
-        d.status === "ACTIVE"
-      );
+      const delegation = existingDelegations.find((d: any) => {
+        console.log('Checking delegation:', {
+          delegator: d.delegator,
+          delegate: d.delegate,
+          from: d.from,
+          to: d.to,
+          status: d.status
+        });
+        return (d.delegator || d.from)?.toLowerCase() === delegatorAddress.toLowerCase() &&
+               (d.delegate || d.to)?.toLowerCase() === delegateAddress.toLowerCase() &&
+               d.status === "ACTIVE";
+      });
 
       if (!delegation) {
         throw new Error("Không tìm thấy delegation phù hợp. Hãy tạo delegation trước.");
@@ -131,7 +141,6 @@ export default function DelegationTester() {
               onChange={e => setAmount(Number(e.target.value))} 
               style={{ width: "100%", padding: 8, borderRadius: 4, border: "1px solid #ccc" }}
               min="1"
-              max="126"
             />
           </label>
         </div>

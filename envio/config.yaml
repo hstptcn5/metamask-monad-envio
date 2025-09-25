@@ -1,0 +1,23 @@
+name: metamask-monad-indexer
+description: MetaMask Smart Accounts indexer for Monad testnet
+version: 1.0.0
+
+networks:
+  - name: monad-testnet
+    chainId: 10143
+    rpcUrl: ${MONAD_RPC_URL}
+    startBlock: 1000000
+
+contracts:
+  - name: MonUSDC
+    address: ${MUSDC_ADDRESS}
+    abi: MonUSDC
+    startBlock: 1000000
+
+datasources:
+  - name: MonUSDC
+    contract: MonUSDC
+    startBlock: 1000000
+    events:
+      - name: Transfer
+        handler: handleTransfer

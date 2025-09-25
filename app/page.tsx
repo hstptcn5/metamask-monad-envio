@@ -12,10 +12,12 @@ export default function Home() {
       </ul>
       
       <div style={{ marginTop: 20, padding: 16, backgroundColor: "#e8f5e8", borderRadius: 8 }}>
-        <h4>✅ Luồng hoạt động mới (Đơn giản)</h4>
+        <h4>✅ Luồng hoạt động hoàn chỉnh</h4>
         <p>1. Vào <a href="/subscription">Tạo Subscription</a> → Kết nối MetaMask → Tự động tạo Smart Account</p>
         <p>2. Transfer mUSDC từ EOA sang Smart Account (có form tích hợp)</p>
         <p>3. Tạo delegation từ Smart Account</p>
+        <p>4. Vào <a href="/test-delegation">Test Delegation</a> → Kiểm tra quyền sử dụng</p>
+        <p>5. Vào <a href="/withdraw-delegation">Withdraw Delegation</a> → Ví B rút token từ ví A</p>
         <p><strong>Không cần upgrade EOA!</strong> Chỉ cần transfer token.</p>
       </div>
       

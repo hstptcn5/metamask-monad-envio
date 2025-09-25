@@ -4,9 +4,12 @@ import { http } from "viem";
 import {
   createBundlerClient,
   createPaymasterClient,
+  createSmartAccountClient,
+  createPublicErc4337Client,
 } from "viem/account-abstraction";
 import { createDelegation } from "@metamask/delegation-toolkit";
 import { debugSmartAccount, validateDelegationInput } from "./debug";
+import { bundlerRpcUrl, paymasterRpcUrl } from "./clients";
 
 export type PeriodScope = {
   type: "erc20PeriodTransfer";
@@ -143,6 +146,134 @@ export async function createDelegationWithMetaMask(
   } catch (error: any) {
     console.error("Error creating delegation with MetaMask:", error);
     throw new Error(`Lỗi tạo delegation: ${error.message}`);
+  }
+}
+
+// Function để redeem delegation thực tế
+// Gasless transaction với Pimlico Bundler + Paymaster
+export async function redeemDelegationGasless(
+  smartAccount: any,
+  delegation: any,
+  amount: number
+) {
+  try {
+    if (!smartAccount || !smartAccount.environment) {
+      throw new Error("Smart Account chưa được khởi tạo");
+    }
+
+    if (!bundlerRpcUrl || !paymasterRpcUrl) {
+      throw new Error("Bundler hoặc Paymaster URL chưa được cấu hình");
+    }
+
+    console.log("🚀 Bắt đầu gasless transaction với Pimlico...");
+
+    // Tạo bundler client
+    const bundlerClient = createBundlerClient({
+      transport: http(bundlerRpcUrl),
+    });
+
+    // Tạo paymaster client
+    const paymasterClient = createPaymasterClient({
+      transport: http(paymasterRpcUrl),
+    });
+
+    // Tạo smart account client với gasless support
+    const smartAccountClient = createSmartAccountClient({
+      account: smartAccount,
+      bundlerClient,
+      paymasterClient,
+    });
+
+    // Tạo ERC20 transfer call data
+    const transferCalldata = smartAccount.encodeRedeemCalldata({
+      delegations: [[delegation]],
+      modes: [0], // ExecutionMode.Single
+      executions: [[{
+        target: DEFAULT_USDC,
+        value: 0n,
+        data: `0xa9059cbb${delegation.to.slice(2).padStart(64, '0')}${toUsdc(amount).toString(16).padStart(64, '0')}`
+      }]]
+    });
+
+    // Gửi UserOperation (gasless)
+    const userOpHash = await smartAccountClient.sendUserOperation({
+      to: smartAccount.environment.contracts.DelegationManager.address,
+      data: transferCalldata,
+      value: 0n,
+    });
+
+    console.log("✅ UserOperation đã được gửi:", userOpHash);
+
+    // Chờ transaction được mine
+    const receipt = await smartAccountClient.waitForUserOperationReceipt({
+      hash: userOpHash,
+    });
+
+    return {
+      userOpHash,
+      transactionHash: receipt.receipt.transactionHash,
+      status: "SUCCESS",
+      message: `Đã rút thành công ${amount} mUSDC từ delegation (gasless)`,
+      timestamp: new Date().toISOString(),
+      gasless: true
+    };
+  } catch (error: any) {
+    console.error("Error in gasless transaction:", error);
+    throw new Error(`Lỗi gasless transaction: ${error.message}`);
+  }
+}
+
+// Fallback: Regular transaction nếu gasless fail
+export async function redeemDelegationReal(
+  smartAccount: any,
+  delegation: any,
+  amount: number
+) {
+  try {
+    if (!smartAccount || !smartAccount.environment) {
+      throw new Error("Smart Account chưa được khởi tạo");
+    }
+
+    // Tạo execution data để rút token
+    const execution = {
+      target: DEFAULT_USDC,
+      value: 0n,
+      data: smartAccount.encodeRedeemCalldata({
+        delegations: [[delegation]],
+        modes: [0], // ExecutionMode.Single
+        executions: [[{
+          target: DEFAULT_USDC,
+          value: 0n,
+          data: `0xa9059cbb${delegation.to.slice(2).padStart(64, '0')}${toUsdc(amount).toString(16).padStart(64, '0')}`
+        }]]
+      })
+    };
+
+    // Gọi contract để redeem delegation
+    const { createWalletClient, custom } = await import("viem");
+    const walletClient = createWalletClient({
+      account: smartAccount.address,
+      transport: custom(window.ethereum),
+      chain: smartAccount.environment.chain,
+    });
+
+    const txHash = await walletClient.writeContract({
+      address: smartAccount.environment.contracts.DelegationManager.address,
+      abi: smartAccount.environment.contracts.DelegationManager.abi,
+      functionName: "redeemDelegations",
+      args: [execution.delegations, execution.modes, execution.executions],
+    });
+
+    return {
+      transactionHash: txHash,
+      status: "SUCCESS",
+      message: `Đã rút thành công ${amount} mUSDC từ delegation`,
+      timestamp: new Date().toISOString(),
+      gasless: false
+    };
+  } catch (error: any) {
+    console.error("Error redeeming delegation:", error);
+    throw new Error(`Lỗi rút delegation: ${error.message}`);
   }
 }
 

@@ -28,26 +28,133 @@ export default function DelegationForm() {
         throw new Error("Delegate address không hợp lệ. Vui lòng nhập địa chỉ 42 ký tự bắt đầu bằng 0x");
       }
 
-      // Tạo delegation với MetaMask Smart Account
+      // Tạo delegation thực tế với MetaMask Delegation Toolkit
       const smartAccount = await getMetaMaskSmartAccount();
       
-      // Mock delegation data để demo (vì SDK có thể chưa hoàn chỉnh)
-      const mockDelegation = {
-        id: `delegation_${Date.now()}`,
-        from: smartAccount.address,
-        to: delegate,
-        scope: {
-          type: "erc20PeriodTransfer",
-          tokenAddress: DEFAULT_USDC,
-          periodAmount: toUsdc(amount),
-          periodDuration: period,
-          startDate: Math.floor(Date.now() / 1000)
-        },
-        signature: "0x" + "22".repeat(65), // Mock signature
-        createdAt: new Date().toISOString()
+      // Tạo delegation scope
+      const scope = {
+        type: "erc20PeriodTransfer" as const,
+        tokenAddress: "0x3A13C20987Ac0e6840d9CB6e917085F72D17E698" as `0x${string}`, // mUSDC
+        periodAmount: BigInt(amount * 1000000), // Convert to wei (6 decimals)
+        periodDuration: period, // seconds
+        startDate: Math.floor(Date.now() / 1000), // Unix timestamp
       };
       
-      setResult(mockDelegation);
+      // Tạo delegation object với MetaMask Toolkit đúng cách
+      console.log('Creating delegation with params:', {
+        from: smartAccount.address,
+        to: delegate as `0x${string}`,
+        scope: scope,
+      });
+      
+      // Sử dụng ENVIRONMENT BUILDERS (cùng instance với saImpl)
+      const env = smartAccount.environment;
+      const ZERO_AUTHORITY = `0x${'00'.repeat(32)}` as const;
+
+      console.log('Environment structure:', {
+        hasCaveats: !!env.caveats,
+        hasBuilders: !!env.builders,
+        caveatsKeys: env.caveats ? Object.keys(env.caveats) : 'N/A',
+        buildersKeys: env.builders ? Object.keys(env.builders) : 'N/A'
+      });
+
+      let delegation;
+
+      try {
+        // Thử sử dụng environment builders
+        if (env.caveats && env.caveats.erc20PeriodTransfer) {
+          // 1) Build caveat từ ENVIRONMENT (cùng instance)
+          const erc20PeriodCaveat = env.caveats.erc20PeriodTransfer({
+            tokenAddress: scope.tokenAddress,
+            periodAmount: scope.periodAmount,     // BigInt
+            periodDuration: scope.periodDuration, // number (seconds)
+            startDate: scope.startDate,           // unix ts (seconds)
+          });
+
+          // 2) Tạo delegation bằng ENVIRONMENT BUILDERS
+          delegation = env.builders.createDelegation({
+            from: smartAccount.address,
+            to: delegate as `0x${string}`,
+            authority: ZERO_AUTHORITY,
+            caveats: [erc20PeriodCaveat],
+            salt: '0x',
+          });
+
+          console.log('Created delegation with ENV builders:', delegation);
+        } else {
+          throw new Error('Environment caveats not available');
+        }
+      } catch (error) {
+        console.warn('Environment builders failed, using fallback:', error);
+        
+        // Fallback: tạo delegation object với format đúng
+        delegation = {
+          delegator: smartAccount.address,
+          delegate: delegate as `0x${string}`,
+          authority: ZERO_AUTHORITY,
+          caveats: [
+            {
+              type: "erc20PeriodTransfer",
+              tokenAddress: scope.tokenAddress,
+              periodAmount: scope.periodAmount.toString(),
+              periodDuration: scope.periodDuration,
+              startDate: scope.startDate
+            }
+          ],
+          salt: "0x",
+          scope: scope // Giữ scope cho compatibility
+        };
+        
+        console.log('Created fallback delegation object:', delegation);
+      }
+
+      // Log nhẹ, KHÔNG biến đổi mảng caveats
+      console.log('Created delegation with ENV builders:', {
+        delegator: delegation.delegator,
+        delegate: delegation.delegate,
+        authority: delegation.authority,
+        caveatsCount: Array.isArray(delegation.caveats) ? delegation.caveats.length : 0,
+        salt: delegation.salt,
+      });
+      
+      // Sign delegation - thử cả 2 cách
+      console.log('Signing delegation with payload:', delegation);
+      let signature: `0x${string}`;
+      
+      try {
+        // Cách 1: truyền trực tiếp
+        signature = await smartAccount.signDelegation(delegation);
+        console.log('Received signature (direct):', signature);
+      } catch (error) {
+        console.warn('Direct signing failed, trying wrapper:', error);
+        try {
+          // Cách 2: wrapper object
+          signature = await smartAccount.signDelegation({ delegation });
+          console.log('Received signature (wrapper):', signature);
+        } catch (error2) {
+          console.error('Both signing methods failed:', error2);
+          throw new Error(`Không thể ký delegation: ${error2.message}`);
+        }
+      }
+      
+      // Tạo signed delegation
+      const signedDelegation = {
+        ...delegation,
+        signature: signature,
+        id: `delegation_${Date.now()}`,
+        createdAt: new Date().toISOString(),
+        status: "ACTIVE"
+      };
+      
+      // Lưu signed delegation vào localStorage để sử dụng sau này
+      const existingDelegations = JSON.parse(localStorage.getItem('delegations') || '[]');
+      existingDelegations.push(signedDelegation);
+      localStorage.setItem('delegations', JSON.stringify(existingDelegations, (key, value) => 
+        typeof value === 'bigint' ? value.toString() : value
+      ));
+      
+      console.log('Final signedDelegation object:', signedDelegation);
+      setResult(signedDelegation);
     } catch (err: any) {
       console.error("Delegation error:", err);
       setError(err.message ?? String(err));
@@ -57,7 +164,12 @@ export default function DelegationForm() {
   };
 
   return (
-    <form onSubmit={onSubmit} style={{ display: "grid", gap: 12, maxWidth: 520 }}>
+    <div>
+      <h2>Tạo Delegation (REAL)</h2>
+      <p style={{ color: "#666", marginBottom: 20 }}>
+        Tạo delegation thực tế - lưu vào localStorage để sử dụng sau
+      </p>
+      <form onSubmit={onSubmit} style={{ display: "grid", gap: 12, maxWidth: 520 }}>
       <label>
         Delegate address (người được ủy quyền)
         <input 
@@ -102,10 +214,15 @@ export default function DelegationForm() {
           }}>
             <strong>✅ Delegation tạo thành công!</strong>
             <div style={{ marginTop: 8 }}>
-              <p><strong>Smart Account:</strong> {result.from}</p>
-              <p><strong>Delegate:</strong> {result.to}</p>
-              <p><strong>Amount:</strong> {Number(result.scope.periodAmount) / 1000000} mUSDC</p>
-              <p><strong>Period:</strong> {result.scope.periodDuration} seconds</p>
+              <p><strong>Delegator:</strong> {result.delegator}</p>
+              <p><strong>Delegate:</strong> {result.delegate}</p>
+              <p><strong>Authority:</strong> {result.authority}</p>
+              <p><strong>Caveats:</strong> {result.caveats?.length || 0} caveats</p>
+              <p><strong>Salt:</strong> {result.salt}</p>
+              <p><strong>Amount:</strong> {amount} mUSDC</p>
+              <p><strong>Period:</strong> {period} seconds</p>
+              <p><strong>Signature:</strong> {result.signature?.substring(0, 20) || 'N/A'}...</p>
+              <p><strong>Status:</strong> {result.status}</p>
               <p><strong>Created:</strong> {new Date(result.createdAt).toLocaleString()}</p>
             </div>
             <details style={{ marginTop: 8 }}>
@@ -117,6 +234,7 @@ export default function DelegationForm() {
             </details>
           </div>
         )}
-    </form>
+      </form>
+    </div>
   );
 }

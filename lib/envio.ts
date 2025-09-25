@@ -1,8 +1,10 @@
 import fetch from "cross-fetch";
 import { blockchainIndexer } from "./blockchain-indexer";
 import { USDC_TEST } from "./chain";
+import { handleAsync, NetworkError } from "./errorHandler";
+import { withCache, performanceMonitor } from "./performance";
 
-const ENVIO_GRAPHQL = process.env.ENVIO_GRAPHQL;
+const ENVIO_GRAPHQL = process.env.NEXT_PUBLIC_ENVIO_GRAPHQL || process.env.ENVIO_GRAPHQL;
 
 /**
  * Query Envio hoặc fallback về blockchain indexer
@@ -82,3 +84,84 @@ export async function queryDelegations(address: string) {
     return { delegations: [], redemptions: [] };
   }
 }
+
+/**
+ * Query transfers từ Envio hoặc fallback
+ */
+// Cached version of queryTransfers
+const _queryTransfers = async (limit: number = 10) => {
+  const stopTimer = performanceMonitor.startTimer('queryTransfers');
+  
+  try {
+    // Nếu có Envio GraphQL endpoint, sử dụng nó
+    if (ENVIO_GRAPHQL) {
+      const { data, error } = await handleAsync(async () => {
+        const q = /* GraphQL */ `
+          query($limit: Int!) {
+            transfers(first: $limit, orderBy: blockTimestamp, orderDirection: desc) {
+              id
+              from
+              to
+              value
+              blockTimestamp
+              transactionHash
+              blockNumber
+            }
+          }
+        `;
+
+        const res = await fetch(ENVIO_GRAPHQL, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ query: q, variables: { limit } })
+        });
+
+        if (!res.ok) {
+          throw new NetworkError(`HTTP error! status: ${res.status}`);
+        }
+
+        const json = await res.json();
+        return json.data?.transfers || [];
+      }, 'Failed to query Envio');
+
+      if (data) {
+        stopTimer();
+        return data;
+      }
+      
+      console.warn("Envio transfers query failed, falling back to blockchain indexer:", error);
+    }
+
+    // Fallback: Sử dụng blockchain indexer
+    const { data, error } = await handleAsync(async () => {
+      const transfers = await blockchainIndexer.getRecentTransfers(
+        USDC_TEST as `0x${string}`,
+        BigInt(limit)
+      );
+
+      return transfers.map(transfer => ({
+        id: transfer.id,
+        from: transfer.from,
+        to: transfer.to,
+        value: transfer.value.toString(),
+        blockTimestamp: transfer.timestamp.toString(),
+        transactionHash: transfer.txHash,
+        blockNumber: transfer.blockNumber.toString()
+      }));
+    }, 'Failed to query blockchain indexer');
+
+    stopTimer();
+    return data || [];
+  } catch (error) {
+    stopTimer();
+    console.error("All query methods failed:", error);
+    return [];
+  }
+};
+
+// Export cached version
+export const queryTransfers = withCache(
+  _queryTransfers,
+  (limit: number) => `transfers_${limit}`,
+  10000 // 10 second cache
+);

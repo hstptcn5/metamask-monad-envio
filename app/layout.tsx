@@ -7,6 +7,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <a href="/">Home</a>
           <a href="/upgrade-eoa">Upgrade EOA</a>
           <a href="/subscription">Tạo Subscription</a>
+          <a href="/test-delegation">Test Delegation</a>
+          <a href="/withdraw-delegation">Withdraw Delegation</a>
           <a href="/social-pay">Social Tip</a>
           <a href="/dashboard">Dashboard</a>
           <a href="/balance-checker">Balance Checker</a>

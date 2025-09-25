@@ -1,122 +1,333 @@
-# Monad Delegated Subscription & Social Pay Hub
+# MetaMask Smart Accounts on Monad Testnet
 
-MVP demo cho Smart Accounts + Delegation + Gasless transactions trên Monad testnet với Envio realtime indexing.
+A comprehensive dApp demonstrating MetaMask Smart Accounts, delegation, and gasless transactions on Monad testnet.
 
-## 🏗️ Cấu trúc dự án
+## 🎯 Project Overview
+
+This project showcases the power of **Account Abstraction** and **Delegation** using MetaMask Smart Accounts on Monad testnet. Users can create smart accounts, delegate spending permissions, and perform gasless transactions.
+
+### Key Features
+
+- 🚀 **MetaMask Smart Accounts** - Create and manage smart accounts
+- 🤝 **Delegation System** - Delegate spending permissions to others
+- 💰 **Gasless Transactions** - Powered by Pimlico bundler and paymaster
+- 🔄 **EIP-7702 Upgrade** - Upgrade EOAs to smart accounts
+- 📊 **Social Coordination** - Tips and delegation feeds
+- ⚡ **Automated Subscriptions** - Automated recurring payments
+- 🛡️ **Production-Ready** - Error handling, security, and performance optimizations
+
+## 🏗️ Architecture
 
 ```
-monad-subscription-hub/
-├─ monad-erc20/              # ERC-20 token deployment
-├─ envio/                    # Envio indexer
-├─ app/                      # Next.js web app
-├─ components/               # React components
-└─ lib/                      # Utilities & SDK integration
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Frontend      │    │   Smart Accounts │    │   Monad Testnet │
+│   (Next.js)     │◄──►│   (MetaMask)     │◄──►│   (mUSDC)       │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Dashboard     │    │   Delegation     │    │   Gasless Tx    │
+│   (Envio)       │    │   Toolkit        │    │   (Pimlico)     │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
 ```
 
-## 🚀 Cách chạy end-to-end
+## 🚀 Quick Start
 
-### 1. Deploy ERC-20 Test Token
+### Prerequisites
+
+- Node.js 18+ 
+- MetaMask extension
+- Monad testnet MON tokens (for gas)
+- Pimlico API key (for gasless transactions)
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd metamask-monad-envio
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Configure environment**
+   ```bash
+   cp env.example .env
+   ```
+   
+   Edit `.env` with your configuration:
+   ```env
+   # Monad Testnet
+   MONAD_RPC_URL=https://rpc.monad-testnet.fastlane.xyz/YOUR_RPC_KEY
+   MONAD_CHAIN_ID=10143
+   
+   # Pimlico (for gasless transactions)
+   BUNDLER_RPC_URL=https://api.pimlico.io/v2/10143/rpc?apikey=YOUR_PIMLICO_API_KEY
+   PAYMASTER_RPC_URL=https://api.pimlico.io/v2/10143/rpc?apikey=YOUR_PIMLICO_API_KEY
+   
+   # Development
+   DEV_PRIVATE_KEY=0x... # For testing only
+   ```
+
+4. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+
+5. **Open your browser**
+   Navigate to `http://localhost:3000`
+
+## 📱 User Flow
+
+### 1. Connect MetaMask
+- Click "Connect MetaMask" on any page
+- Approve the connection
+- Switch to Monad testnet (automatic)
+
+### 2. Create Smart Account
+- Go to `/upgrade-eoa`
+- Choose "Create New Smart Account" (recommended)
+- Transfer mUSDC from EOA to Smart Account
+
+### 3. Create Delegation
+- Go to `/subscription`
+- Enter delegate address
+- Set amount and period
+- Sign delegation with Smart Account
+
+### 4. Test Delegation
+- Go to `/test-delegation`
+- Enter delegator and delegate addresses
+- Test if delegation is valid
+
+### 5. Withdraw from Delegation
+- Go to `/withdraw-delegation`
+- Choose gasless or regular transaction
+- Withdraw tokens from delegation
+
+### 6. Social Tips
+- Go to `/social-pay`
+- Enter recipient address and amount
+- Send tip (EOA to EOA transfer)
+
+### 7. View Activity
+- Go to `/dashboard`
+- See all transactions, tips, and delegations
+- Filter by activity type
+
+## 🛠️ Development
+
+### Project Structure
+
+```
+├── app/                    # Next.js app router
+│   ├── dashboard/         # Social coordination dashboard
+│   ├── subscription/      # Delegation creation
+│   ├── test-delegation/   # Delegation testing
+│   ├── withdraw-delegation/ # Delegation withdrawal
+│   └── social-pay/        # Social tipping
+├── components/            # React components
+│   ├── MetaMaskConnect.tsx
+│   ├── DelegationForm.tsx
+│   ├── DelegationTester.tsx
+│   ├── DelegationWithdraw.tsx
+│   └── BalanceChecker.tsx
+├── lib/                   # Core utilities
+│   ├── smartAccount.ts    # Smart account management
+│   ├── delegation.ts      # Delegation logic
+│   ├── chain.ts          # Chain configuration
+│   ├── clients.ts        # RPC clients
+│   ├── errorHandler.ts   # Error handling
+│   └── performance.ts    # Performance optimizations
+├── scripts/              # Automation scripts
+│   ├── automated-subscriptions.js
+│   └── smoke-test.js
+└── envio/                # Envio indexer (optional)
+```
+
+### Key Technologies
+
+- **Frontend**: Next.js 14, React 18, TypeScript
+- **Blockchain**: Viem, MetaMask Delegation Toolkit
+- **Smart Accounts**: ERC-4337, EIP-7702
+- **Gasless**: Pimlico bundler and paymaster
+- **Indexing**: Envio (optional), custom blockchain indexer
+- **Testing**: Custom smoke tests
+
+### Scripts
 
 ```bash
-cd monad-erc20
-npm install
-cp env.example .env
-# Điền MONAD_RPC_URL, MONAD_CHAIN_ID, DEPLOY_PK
+# Development
+npm run dev              # Start development server
+npm run build           # Build for production
+npm run start           # Start production server
 
-npx hardhat compile
-npx hardhat run scripts/deploy.js --network monad
-# ✅ mUSDC deployed: 0x3A13C20987Ac0e6840d9CB6e917085F72D17E698
+# Automation
+npm run auto-subscriptions  # Run automated subscriptions
+npm run smoke-test         # Run smoke tests
 ```
 
-**Lưu ý**: Sử dụng `deploy.js` thay vì `deploy.ts` để tránh lỗi TypeScript extension.
+## 🔧 Configuration
 
-### 2. Khởi động Envio Indexer (Tùy chọn)
+### Environment Variables
 
-**Cách 1: Sử dụng Envio**
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `MONAD_RPC_URL` | Monad testnet RPC endpoint | Yes |
+| `MONAD_CHAIN_ID` | Monad testnet chain ID (10143) | Yes |
+| `BUNDLER_RPC_URL` | Pimlico bundler endpoint | No |
+| `PAYMASTER_RPC_URL` | Pimlico paymaster endpoint | No |
+| `DEV_PRIVATE_KEY` | Development private key | No |
+
+### Smart Account Configuration
+
+The app uses MetaMask Delegation Toolkit with:
+- **Implementation**: Hybrid smart accounts
+- **Network**: Monad testnet (Chain ID: 10143)
+- **Token**: mUSDC (0x3A13C20987Ac0e6840d9CB6e917085F72D17E698)
+
+## 🧪 Testing
+
+### Smoke Tests
+
+Run the comprehensive smoke test:
+
 ```bash
-cd envio
-npm install -g @envio/cli  # hoặc npx @envio/cli
-cp env.example .env
-# Điền MONAD_RPC_URL, MONAD_CHAIN_ID, MUSDC_ADDRESS (từ bước 1)
-
-npx @envio/cli dev
-# Ghi lại GraphQL endpoint (vd: http://localhost:8080/graphql)
+npm run smoke-test
 ```
 
-**Cách 2: Fallback (Khuyến nghị cho demo)**
+This tests:
+- ✅ Delegation creation
+- ✅ Delegation validation  
+- ✅ Delegation testing
+- ✅ Delegation redemption
+- ✅ Balance checking
+
+### Manual Testing
+
+1. **Create delegation** → Test delegation → Withdraw delegation
+2. **Send social tip** → Check balance
+3. **View dashboard** → Verify activity feed
+
+## 🚀 Deployment
+
+### Production Build
+
 ```bash
-# Không cần cài đặt gì thêm
-# Web app sẽ tự động fallback về blockchain indexer
+npm run build
+npm run start
 ```
 
-### 3. Chạy Web App
+### Environment Setup
 
-```bash
-# Trong thư mục gốc
-npm install
-cp env.example .env
-# Điền tất cả biến môi trường:
-# - MONAD_RPC_URL, MONAD_CHAIN_ID
-# - USDC_TEST=0x3A13C20987Ac0e6840d9CB6e917085F72D17E698 (đã cập nhật)
-# - BUNDLER_RPC_URL, PAYMASTER_RPC_URL
-# - DEV_PRIVATE_KEY (cùng với DEPLOY_PK)
-# - ENVIO_GRAPHQL (endpoint từ bước 2, hoặc để trống để dùng fallback)
+1. Set production environment variables
+2. Configure Pimlico API keys
+3. Set up monitoring and logging
+4. Configure rate limiting
 
-npm run dev
-# Mở http://localhost:3000
-```
+## 📊 Monitoring
 
-## 📋 Checklist Production
+### Performance Metrics
 
-### ✅ Hoàn thành
-- [x] ERC-20 token contract (MonUSDC)
-- [x] Smart Account integration với MetaMask SDK
-- [x] Delegation creation & redemption
-- [x] Gasless transactions (bundler + paymaster)
-- [x] Envio indexer cho token transfers
-- [x] Web UI cho tạo subscription & social tip
+The app includes built-in performance monitoring:
+- Request timing
+- Cache hit rates
+- Error rates
+- User operation success rates
 
-### 🔄 Cần cập nhật
-- [ ] **Chain Config**: Xác nhận MONAD_RPC_URL và MONAD_CHAIN_ID chính xác
-- [ ] **Bundler/Paymaster**: Tích hợp với provider thực (Pimlico/ZeroDev)
-- [ ] **DelegationManager**: Thêm address/ABI khi MetaMask cung cấp
-- [ ] **Envio Schema**: Mở rộng cho delegation events
+### Logs
 
-## 🎯 Demo Flow
+- **Automated subscriptions**: `logs/automated-subscriptions.log`
+- **Smoke tests**: `logs/smoke-test.log`
+- **Performance**: Browser console
 
-1. **Tạo Subscription**: Ủy quyền 10 mUSDC/tuần cho delegate sử dụng MetaMask Smart Accounts
-2. **Social Tip**: Redeem delegation để tip gasless trên Monad testnet
-3. **Dashboard**: Xem realtime transfers từ Envio indexer
+## 🔒 Security
 
-## 🔧 Troubleshooting
+### Implemented Security Measures
 
-### Lỗi thường gặp:
-- **RPC Connection**: Kiểm tra MONAD_RPC_URL có hoạt động
-- **Private Key**: Đảm bảo có đủ MON để deploy/transact
-- **Bundler**: Xác nhận endpoint bundler hỗ trợ Monad testnet
-- **Envio**: Kiểm tra GraphQL endpoint có trả về data
+- ✅ Input validation and sanitization
+- ✅ Rate limiting
+- ✅ Error handling without sensitive data exposure
+- ✅ Address validation
+- ✅ Amount limits
+- ✅ Signature verification
 
-### Fallback Options:
-- **Envio**: Web app tự động fallback về blockchain indexer nếu ENVIO_GRAPHQL trống
-- **Bundler**: Nếu bundler chưa hỗ trợ Monad, có thể dùng direct transactions (có gas)
-- **DelegationManager**: Chỉ demo token transfers nếu chưa có address/ABI
+### Best Practices
 
-## 📚 Tài liệu tham khảo
+- Never commit private keys
+- Use environment variables for sensitive data
+- Validate all user inputs
+- Implement proper error handling
+- Monitor for suspicious activity
 
-- [MetaMask Delegation Toolkit](https://docs.metamask.io/delegation-toolkit/) - Hướng dẫn chính thức
-- [MetaMask Smart Accounts](https://docs.metamask.io/delegation-toolkit/concepts/smart-accounts) - Smart Accounts concept
-- [Viem Account Abstraction](https://viem.sh/docs/account-abstraction)
-- [Envio Documentation](https://docs.envio.dev/)
-- [Monad Testnet](https://docs.monad.xyz/)
-- [Hackathon Requirements](monad%20metamask.txt) - Yêu cầu hackathon chi tiết
+## 🤝 Contributing
 
-## 🎉 Kết quả mong đợi
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests
+5. Submit a pull request
 
-Sau khi hoàn thành, bạn sẽ có:
-- ✅ ERC-20 token trên Monad testnet
-- ✅ Smart Account với delegation capabilities
-- ✅ Gasless transactions qua bundler/paymaster
-- ✅ Realtime indexing với Envio
-- ✅ Web UI hoàn chỉnh cho demo
+## 📄 License
 
-**Ready for demo video! 🎬**
+This project is licensed under the MIT License.
+
+## 🆘 Support
+
+### Common Issues
+
+**Q: MetaMask not connecting**
+A: Ensure MetaMask is installed and unlocked. Check if you're on the correct network.
+
+**Q: Gasless transactions failing**
+A: Verify your Pimlico API key is correct and has sufficient credits.
+
+**Q: Delegation not working**
+A: Ensure the Smart Account has sufficient mUSDC balance and the delegation is properly signed.
+
+**Q: RPC timeouts**
+A: The app includes multiple RPC fallbacks. Check your network connection.
+
+### Getting Help
+
+- Check the browser console for error messages
+- Run smoke tests to verify functionality
+- Review the logs in the `logs/` directory
+- Check environment variable configuration
+
+## 🎉 Demo Flow
+
+For a complete demo experience:
+
+1. **Setup** (2 minutes)
+   - Connect MetaMask
+   - Switch to Monad testnet
+   - Get testnet MON tokens
+
+2. **Smart Account** (3 minutes)
+   - Create new Smart Account
+   - Transfer mUSDC to Smart Account
+   - Verify balance
+
+3. **Delegation** (5 minutes)
+   - Create delegation to another address
+   - Test delegation validity
+   - Withdraw from delegation (gasless)
+
+4. **Social Features** (3 minutes)
+   - Send social tip
+   - View activity dashboard
+   - Filter by transaction type
+
+5. **Automation** (2 minutes)
+   - Run automated subscriptions script
+   - View logs and results
+
+**Total demo time: ~15 minutes**
+
+---
+
+Built with ❤️ for the Monad ecosystem and MetaMask Smart Accounts.
